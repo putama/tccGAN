@@ -89,7 +89,8 @@ class CycleGANModel(BaseModel):
         input_B = input['B' if AtoB else 'A']
         self.input_A.resize_(input_A.size()).copy_(input_A)
         self.input_B.resize_(input_B.size()).copy_(input_B)
-        self.image_paths = input['A_paths' if AtoB else 'B_paths']
+        self.image_path_A = input['A_paths' if AtoB else 'B_paths']
+        self.image_path_B = input['B_paths' if AtoB else 'A_paths']
 
     def forward(self):
         self.real_A = Variable(self.input_A)
@@ -97,7 +98,7 @@ class CycleGANModel(BaseModel):
 
     # get image paths
     def get_image_paths(self):
-        return self.image_paths
+        return self.image_path_A
 
     def backward_D_basic(self, netD, real, fake):
         # Real
