@@ -5,6 +5,7 @@ from PIL import Image
 import inspect, re
 import numpy as np
 import os
+import shutil
 import collections
 
 # Converts a Tensor into a Numpy array
@@ -72,6 +73,11 @@ def mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+def mkdirreplace(path):
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path)
+
 def load_flo(path):
     with open(path, 'rb') as f:
         magic = np.fromfile(f, np.float32, count=1)
@@ -82,3 +88,4 @@ def load_flo(path):
     # Reshape data into 3D array (columns, rows, bands)
     data2D = np.resize(data, (w, h, 2))
     return data2D
+
