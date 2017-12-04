@@ -26,6 +26,8 @@ class CycleGANModel(BaseModel):
         size = opt.fineSize
         self.input_A = self.Tensor(nb, opt.input_nc, size, size)
         self.input_B = self.Tensor(nb, opt.output_nc, size, size)
+        self.flows_A = self.Tensor(nb, size, size, 2)
+        self.flows_B = self.Tensor(nb, size, size, 2)
 
         # load/define networks
         # The naming conversion is different from those used in the paper
@@ -89,8 +91,17 @@ class CycleGANModel(BaseModel):
         input_B = input['B' if AtoB else 'A']
         self.input_A.resize_(input_A.size()).copy_(input_A)
         self.input_B.resize_(input_B.size()).copy_(input_B)
-        self.image_path_A = input['A_paths' if AtoB else 'B_paths']
-        self.image_path_B = input['B_paths' if AtoB else 'A_paths']
+        # self.image_path_A = input['A_paths' if AtoB else 'B_paths']
+        # self.image_path_B = input['B_paths' if AtoB else 'A_paths']
+
+    def set_flows(self, input):
+        AtoB = self.opt.which_direction == 'AtoB'
+        flows_A = input['A_flows' if AtoB else 'B_flows']
+        flows_B = input['B_flows' if AtoB else 'A_flows']
+        self.flows_A.resize_(flows_A.size()).copy_(flows_A)
+        self.flows_B.resize_(flows_B.size()).copy_(flows_B)
+        self.flows_A_var = Variable(self.flows_A)
+        self.flows_B_var = Variable(self.flows_B)
 
     def forward(self):
         self.real_A = Variable(self.input_A)
@@ -165,18 +176,18 @@ class CycleGANModel(BaseModel):
         loss_cycle_B = self.criterionCycle(rec_B, self.real_B) * lambda_B
 
         # Domain A temporal loss
-        flows_A = compute_opt_flow(fake_A)
+        flows_A = self.flows_A_var #compute_opt_flow(fake_A)
         prevframes_A = fake_A[0:fake_A.shape[0]-1]
         nextframes_A = fake_A[1:fake_A.shape[0]]
         warped_A = grid_sample(prevframes_A, flows_A)
-        loss_temporal_A = self.criterionTemporal(nextframes_A, warped_A.detach())
+        loss_temporal_A = self.criterionTemporal(nextframes_A, warped_A.detach()) * lambda_A
 
         # Domain B temporal loss
-        flows_B = compute_opt_flow(fake_B)
+        flows_B = self.flows_B_var #compute_opt_flow(fake_B)
         prevframes_B = fake_B[0:fake_B.shape[0] - 1]
         nextframes_B = fake_B[1:fake_B.shape[0]]
         warped_B = grid_sample(prevframes_B, flows_B)
-        loss_temporal_B = self.criterionTemporal(nextframes_B, warped_B.detach())
+        loss_temporal_B = self.criterionTemporal(nextframes_B, warped_B.detach()) * lambda_B
 
         # combined loss
         loss_G = loss_G_A + loss_G_B + loss_cycle_A + loss_cycle_B + loss_idt_A + loss_idt_B

@@ -3,7 +3,7 @@ def create_model(opt):
     model = None
     print(opt.model)
     if opt.model == 'cycle_gan':
-        assert(opt.dataset_mode == 'unaligned')
+        assert(opt.dataset_mode == 'unaligned' or opt.dataset_mode == 'triplet')
         from .cycle_gan_model import CycleGANModel
         model = CycleGANModel()
     elif opt.model == 'pix2pix':

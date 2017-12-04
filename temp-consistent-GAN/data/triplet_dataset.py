@@ -4,18 +4,19 @@ from data.base_dataset import BaseDataset, get_transform
 from PIL import Image
 import PIL
 import random
-
+import torch
 
 class TripletDataset(BaseDataset):
 
     def initialize(self, opt):
+        default_offset = 2
         self.opt = opt
         self.root = opt.dataroot
         self.dir_A = os.path.join(opt.dataroot, 'horse_' + opt.phase)
         self.dir_B = os.path.join(opt.dataroot, 'zebra_' + opt.phase)
 
-        self.A_video_triplets = self.aggregate_dataset(self.dir_A)
-        self.B_video_triplets = self.aggregate_dataset(self.dir_B)
+        self.A_video_triplets = self.aggregate_dataset(self.dir_A, default_offset)
+        self.B_video_triplets = self.aggregate_dataset(self.dir_B, default_offset)
 
         self.A_size = len(self.A_video_triplets)
         self.B_size = len(self.B_video_triplets)
@@ -55,19 +56,19 @@ class TripletDataset(BaseDataset):
 
         if input_nc == 1:  # RGB to gray
             tmp1 = A1[0, ...] * 0.299 + A1[1, ...] * 0.587 + A1[2, ...] * 0.114
-            A1 = tmp.unsqueeze(0)
+            A1 = tmp1.unsqueeze(0)
             tmp2 = A2[0, ...] * 0.299 + A2[1, ...] * 0.587 + A2[2, ...] * 0.114
-            A2 = tmp.unsqueeze(0)
+            A2 = tmp2.unsqueeze(0)
 
         if output_nc == 1:  # RGB to gray
             tmp1 = B1[0, ...] * 0.299 + B1[1, ...] * 0.587 + B1[2, ...] * 0.114
-            B1 = tmp.unsqueeze(0)
+            B1 = tmp1.unsqueeze(0)
             tmp2 = B2[0, ...] * 0.299 + B2[1, ...] * 0.587 + B2[2, ...] * 0.114
-            B2 = tmp.unsqueeze(0)
+            B2 = tmp2.unsqueeze(0)
 
         # if this messes up, it's possible these aren't concat'd correctly:
-        A = torch.cat((A1, A2), 0)
-        B = torch.cat((B1, B2), 0)
+        A = torch.cat((A1.unsqueeze(0), A2.unsqueeze(0)), 0)
+        B = torch.cat((B1.unsqueeze(0), B2.unsqueeze(0)), 0)
 
         return {'A': A, 'B': B,
                 'A_paths': A_triplet, 'B_paths': B_triplet}
@@ -76,9 +77,9 @@ class TripletDataset(BaseDataset):
     # won't behave well in certain edge cases, like when there are no flows in a directory
     def aggregate_dataset(self, dir, offset):
         assert os.path.isdir(dir), '%s is not a valid directory' % dir
-
+        id_length = 6
         triplets = []
-        root = current
+        root = dir
         for v in os.listdir(root):
             video_triplets = []
             rootv = os.path.join(root, v)
