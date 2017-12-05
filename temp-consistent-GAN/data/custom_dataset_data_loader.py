@@ -56,7 +56,7 @@ def custom_collate(batch):
     error_msg = "batch must contain tensors; found {}"
     collatedbatch = {}
     collatedbatch['A'] = torch.cat([batch[i]['A'] for i in range(len(batch))], 0)
-    collatedbatch['B'] = torch.cat([batch[i]['A'] for i in range(len(batch))], 0)
+    collatedbatch['B'] = torch.cat([batch[i]['B'] for i in range(len(batch))], 0)
 
     flowpathsA = [batch[i]['A_paths'][2] for i in range(len(batch))]
     flowpathsB = [batch[i]['B_paths'][2] for i in range(len(batch))]
