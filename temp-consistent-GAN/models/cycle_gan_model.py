@@ -177,15 +177,15 @@ class CycleGANModel(BaseModel):
 
         # Domain A temporal loss
         flows_A = self.flows_A_var #compute_opt_flow(fake_A)
-        prevframes_A = fake_A[0:fake_A.shape[0]-1]
-        nextframes_A = fake_A[1:fake_A.shape[0]]
+        prevframes_A = fake_A[0:-1]
+        nextframes_A = fake_A[1:]
         warped_A = grid_sample(prevframes_A, flows_A)
         loss_temporal_A = self.criterionTemporal(nextframes_A, warped_A.detach()) * lambda_A
 
         # Domain B temporal loss
         flows_B = self.flows_B_var #compute_opt_flow(fake_B)
-        prevframes_B = fake_B[0:fake_B.shape[0] - 1]
-        nextframes_B = fake_B[1:fake_B.shape[0]]
+        prevframes_B = fake_B[0:-1]
+        nextframes_B = fake_B[1:]
         warped_B = grid_sample(prevframes_B, flows_B)
         loss_temporal_B = self.criterionTemporal(nextframes_B, warped_B.detach()) * lambda_B
 
