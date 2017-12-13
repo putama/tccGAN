@@ -9,13 +9,26 @@ def compute_opt_flow(imgs, net):
     print(imgs.size())
     imh, imw = imgs.size()[2:4]
     nframe = imgs.size()[0] - 1
-    input_var = Variable(torch.cat(imgs[0:2,...].data,0).unsqueeze(0).cuda(), volatile=True)
+
+    if torch.cuda.is_available():
+        input_var = Variable(torch.cat(imgs[0:2,...].data,0).unsqueeze(0).cuda(), volatile=True)
+    else:
+        input_var = Variable(torch.cat(imgs[0:2, ...].data, 0).unsqueeze(0), volatile=True)
+
     for i in range(2,nframe+1):
-        input_var.stack(Variable(torch.cat(imgs[i:i+2,...].data,0).unsqueeze(0).cuda(), volatile=True))
+        if torch.cuda.is_available():
+            input_var.stack(Variable(torch.cat(imgs[i:i+2,...].data,0).unsqueeze(0).cuda(), volatile=True))
+        else:
+            input_var.stack(Variable(torch.cat(imgs[i:i + 2, ...].data, 0).unsqueeze(0), volatile=True))
+
     b, _, h, w = input_var.size()
     output = net(input_var)
     upsampled_output = nn.functional.upsample(output, size=(h,w), mode='bilinear')
-    flow = Variable(upsampled_output.data[0]).cuda()
+    flow = Variable(upsampled_output.data[0])
+
+    if torch.cuda.is_available():
+        flow.cuda()
+
     flow = flow.permute(1, 2, 0).unsqueeze(0)
     print(flow.size())
     b_out, h_out, w_out, c_out = flow.size()
@@ -27,11 +40,15 @@ def load_flownet(path=None):
     if path == None:
         path = './models/opt/pretrained_model/flownets_from_caffe.pth.tar.pth'
     # Load pretrained model
-    pre_model = opt.FlowNetS(batchNorm=False).cuda()
+    pre_model = opt.FlowNetS(batchNorm=False)
+
     pre_model_info = torch.load(path)
     # pre_model.load_state_dict(pre_model_info['state_dict'])
     pre_model.load_state_dict(pre_model_info)
-    pre_model.cuda()
+
+    if torch.cuda.is_available():
+        pre_model.cuda()
+
     # print("Load trained model ... epoch = %d" %(pre_model_info['epoch']))
     for param in pre_model.parameters():
         param.requires_grad = False
