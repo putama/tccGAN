@@ -136,7 +136,6 @@ class CycleGANModel(BaseModel):
         self.loss_D_B = loss_D_B.data[0]
 
     def backward_G(self):
-        compute_opt_flow(self.real_A[0:2], self.flownet)
         lambda_idt = self.opt.identity
         lambda_A = self.opt.lambda_A
         lambda_B = self.opt.lambda_B
