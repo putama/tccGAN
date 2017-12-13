@@ -12,8 +12,8 @@ class VideoDataset(BaseDataset):
         default_offset = 2
         self.opt = opt
         self.root = opt.dataroot
-        self.dir_A = os.path.join(opt.dataroot, 'horse_' + opt.phase)
-        self.dir_B = os.path.join(opt.dataroot, 'zebra_' + opt.phase)
+        self.dir_A = os.path.join(opt.dataroot, 'train_A')
+        self.dir_B = os.path.join(opt.dataroot, 'train_B')
 
         self.A_video_tuples = self.aggregate_dataset(self.dir_A, default_offset)
         self.B_video_tuples = self.aggregate_dataset(self.dir_B, default_offset)
