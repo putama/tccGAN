@@ -6,7 +6,6 @@ import opt
 from torch.autograd import Variable
 
 def compute_opt_flow(imgs, net):
-    print(imgs.size())
     imh, imw = imgs.size()[2:4]
     nframe = imgs.size()[0] - 1
 
@@ -30,7 +29,6 @@ def compute_opt_flow(imgs, net):
         flow.cuda()
 
     flow = flow.permute(1, 2, 0).unsqueeze(0)
-    print(flow.size())
     b_out, h_out, w_out, c_out = flow.size()
     assert nframe == b_out and h == h_out and w == w_out and c_out == 2
     
