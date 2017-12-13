@@ -9,7 +9,7 @@ from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
 
-from optical_flow import compute_opt_flow
+from optical_flow import compute_opt_flow, load_flownet
 from torch.nn.functional import grid_sample
 
 import sys
@@ -37,7 +37,8 @@ class CycleGANModel(BaseModel):
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
-
+        self.flownet = load_flownet()
+        
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf,
@@ -176,14 +177,14 @@ class CycleGANModel(BaseModel):
         loss_cycle_B = self.criterionCycle(rec_B, self.real_B) * lambda_B
 
         # Domain A temporal loss
-        flows_A = self.flows_A_var #compute_opt_flow(fake_A)
+        flows_A = compute_opt_flow(self.real_A, self.flownet)
         prevframes_A = fake_A[0:-1]
         nextframes_A = fake_A[1:]
         warped_A = grid_sample(prevframes_A, flows_A)
         loss_temporal_A = self.criterionTemporal(nextframes_A, warped_A.detach()) * lambda_A
 
         # Domain B temporal loss
-        flows_B = self.flows_B_var #compute_opt_flow(fake_B)
+        flows_B = compute_opt_flow(self.real_B, self.flownet)
         prevframes_B = fake_B[0:-1]
         nextframes_B = fake_B[1:]
         warped_B = grid_sample(prevframes_B, flows_B)
