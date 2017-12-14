@@ -14,6 +14,9 @@ def CreateDataset(opt):
     elif opt.dataset_mode == 'single':
         from data.single_dataset import SingleDataset
         dataset = SingleDataset()
+    elif opt.dataset_mode == 'video':
+        from data.video_dataset import VideoDataset
+        dataset = VideoDataset()
     elif opt.dataset_mode == 'triplet':
         from data.triplet_dataset import TripletDataset
         dataset = TripletDataset()
@@ -37,8 +40,10 @@ class CustomDatasetDataLoader(BaseDataLoader):
             batch_size=opt.batchSize,
             shuffle=not opt.serial_batches,
             num_workers=int(opt.nThreads))
-        if opt.dataset_mode == 'triplet':
+        if opt.dataset_mode == 'video':
             self.dataloader.collate_fn = custom_collate
+        elif opt.dataset_mode == 'triplet':
+            self.dataloader.collate_fn = custom_collate_old
 
     def load_data(self):
         return self
@@ -53,6 +58,17 @@ class CustomDatasetDataLoader(BaseDataLoader):
             yield data
 
 def custom_collate(batch):
+    error_msg = "batch must contain tensors; found {}"
+    collatedbatch = {}
+    collatedbatch['A'] = torch.cat([batch[i]['A'] for i in range(len(batch))], 0)
+    collatedbatch['B'] = torch.cat([batch[i]['B'] for i in range(len(batch))], 0)
+
+    collatedbatch['A_paths'] = [batch[i]['A_paths'] for i in range(len(batch))]
+    collatedbatch['B_paths'] = [batch[i]['B_paths'] for i in range(len(batch))]
+
+    return collatedbatch
+
+def custom_collate_old(batch):
     error_msg = "batch must contain tensors; found {}"
     collatedbatch = {}
     collatedbatch['A'] = torch.cat([batch[i]['A'] for i in range(len(batch))], 0)

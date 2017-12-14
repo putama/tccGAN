@@ -2,7 +2,16 @@ from options.test_options import TestOptions
 from data.data_loader import CreateDataLoader
 from models.models import create_model
 from util.util import save_image
+from util.util import tensor2im
 from util.util import mkdirreplace
+import cv2
+
+rootpath = "imgs/results/"
+mkdirreplace(rootpath)
+
+frame_width = 256
+frame_height = 256
+out = cv2.VideoWriter('outpylatest.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 20, (frame_width,frame_height))
 
 opt = TestOptions().parse()
 opt.nThreads = 1   # test code only supports nThreads = 1
@@ -15,8 +24,6 @@ data_loader = CreateDataLoader(opt)
 dataset = data_loader.load_data()
 model = create_model(opt)
 
-rootpath = "imgs/results/"
-mkdirreplace(rootpath)
 historydict = {}
 for i, data in enumerate(dataset):
     if AtoB:
@@ -31,3 +38,6 @@ for i, data in enumerate(dataset):
         filepath = rootpath + "fake_A_{}.jpg".format(str(i))
         im_fake = model.translateB(data['B'][0])
     save_image(im_fake, filepath)
+    print "saved to " + filepath
+    out.write(im_fake)
+out.release()

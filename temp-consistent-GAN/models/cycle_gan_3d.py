@@ -8,10 +8,6 @@ import util.util as util
 from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
-
-from optical_flow import compute_opt_flow, load_flownet
-from torch.nn.functional import grid_sample
-
 import sys
 
 
@@ -26,8 +22,6 @@ class CycleGANModel(BaseModel):
         size = opt.fineSize
         self.input_A = self.Tensor(nb, opt.input_nc, size, size)
         self.input_B = self.Tensor(nb, opt.output_nc, size, size)
-        self.flows_A = self.Tensor(nb, size, size, 2)
-        self.flows_B = self.Tensor(nb, size, size, 2)
 
         # load/define networks
         # The naming conversion is different from those used in the paper
@@ -37,8 +31,7 @@ class CycleGANModel(BaseModel):
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
-        self.flownet = load_flownet()
-        
+
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf,
@@ -63,8 +56,6 @@ class CycleGANModel(BaseModel):
             self.criterionGAN = networks.GANLoss(use_lsgan=not opt.no_lsgan, tensor=self.Tensor)
             self.criterionCycle = torch.nn.L1Loss()
             self.criterionIdt = torch.nn.L1Loss()
-            # temporal loss function
-            self.criterionTemporal = torch.nn.MSELoss()
             # initialize optimizers
             self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()),
                                                 lr=opt.lr*2, betas=(opt.beta1, 0.999))
@@ -92,25 +83,26 @@ class CycleGANModel(BaseModel):
         input_B = input['B' if AtoB else 'A']
         self.input_A.resize_(input_A.size()).copy_(input_A)
         self.input_B.resize_(input_B.size()).copy_(input_B)
-        self.image_path_A = input['A_paths' if AtoB else 'B_paths']
-        self.image_path_B = input['B_paths' if AtoB else 'A_paths']
-
-    def set_flows(self, input):
-        AtoB = self.opt.which_direction == 'AtoB'
-        flows_A = input['A_flows' if AtoB else 'B_flows']
-        flows_B = input['B_flows' if AtoB else 'A_flows']
-        self.flows_A.resize_(flows_A.size()).copy_(flows_A)
-        self.flows_B.resize_(flows_B.size()).copy_(flows_B)
-        self.flows_A_var = Variable(self.flows_A)
-        self.flows_B_var = Variable(self.flows_B)
+        self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
     def forward(self):
         self.real_A = Variable(self.input_A)
         self.real_B = Variable(self.input_B)
 
+    def test(self):
+        real_A = Variable(self.input_A, volatile=True)
+        fake_B = self.netG_A(real_A)
+        self.rec_A = self.netG_B(fake_B).data
+        self.fake_B = fake_B.data
+
+        real_B = Variable(self.input_B, volatile=True)
+        fake_A = self.netG_B(real_B)
+        self.rec_B = self.netG_A(fake_A).data
+        self.fake_A = fake_A.data
+
     # get image paths
     def get_image_paths(self):
-        return self.image_path_A
+        return self.image_paths
 
     def backward_D_basic(self, netD, real, fake):
         # Real
@@ -175,50 +167,8 @@ class CycleGANModel(BaseModel):
         # Backward cycle loss
         rec_B = self.netG_A(fake_A)
         loss_cycle_B = self.criterionCycle(rec_B, self.real_B) * lambda_B
-
-        # Domain A temporal loss -- handle minibatch
-        loss_temporal_A = None
-        for i in range(self.opt.batchSize):
-            flows_A = compute_opt_flow(self.real_A[i*2:(i*2)+2], self.flownet)
-            prevframes_A = fake_A[i*2:(i*2)+1]
-            nextframes_A = fake_A[(i*2)+1:(i*2)+2]
-            warped_A = grid_sample(prevframes_A, flows_A)
-            pair_loss_A = self.criterionTemporal(nextframes_A, warped_A.detach())
-            if loss_temporal_A is None:
-                loss_temporal_A = pair_loss_A
-            else:
-                loss_temporal_A = loss_temporal_A + pair_loss_A
-        loss_temporal_A = (loss_temporal_A / self.opt.batchSize) * lambda_A
-        # flows_A = compute_opt_flow(self.real_A, self.flownet)
-        # prevframes_A = fake_A[0:-1]
-        # nextframes_A = fake_A[1:]
-        # warped_A = grid_sample(prevframes_A, flows_A)
-        # loss_temporal_A = self.criterionTemporal(nextframes_A, warped_A.detach()) * lambda_A
-
-        # Domain B temporal loss -- handle minibatch
-        loss_temporal_B = None
-        for i in range(self.opt.batchSize):
-            flows_B = compute_opt_flow(self.real_B[i * 2:(i * 2) + 2], self.flownet)
-            prevframes_B = fake_B[i * 2:(i * 2) + 1]
-            nextframes_B = fake_B[(i * 2) + 1:(i * 2) + 2]
-            warped_B = grid_sample(prevframes_B, flows_B)
-            pair_loss_B = self.criterionTemporal(nextframes_B, warped_B.detach())
-            if loss_temporal_B is None:
-                loss_temporal_B = pair_loss_B
-            else:
-                loss_temporal_B = loss_temporal_B + pair_loss_B
-        loss_temporal_B = (loss_temporal_B / self.opt.batchSize) * lambda_B
-        # flows_B = compute_opt_flow(self.real_B, self.flownet)
-        # prevframes_B = fake_B[0:-1]
-        # nextframes_B = fake_B[1:]
-        # warped_B = grid_sample(prevframes_B, flows_B)
-        # loss_temporal_B = self.criterionTemporal(nextframes_B, warped_B.detach()) * lambda_B
-
         # combined loss
         loss_G = loss_G_A + loss_G_B + loss_cycle_A + loss_cycle_B + loss_idt_A + loss_idt_B
-        # adding temporal loss to combined G loss
-        loss_G = loss_G + loss_temporal_A + loss_temporal_B
-        # backward G
         loss_G.backward()
 
         self.fake_B = fake_B.data
@@ -226,8 +176,6 @@ class CycleGANModel(BaseModel):
         self.rec_A = rec_A.data
         self.rec_B = rec_B.data
 
-        self.loss_temporal_A = loss_temporal_A.data[0]
-        self.loss_temporal_B = loss_temporal_B.data[0]
         self.loss_G_A = loss_G_A.data[0]
         self.loss_G_B = loss_G_B.data[0]
         self.loss_cycle_A = loss_cycle_A.data[0]
@@ -248,31 +196,6 @@ class CycleGANModel(BaseModel):
         self.optimizer_D_B.zero_grad()
         self.backward_D_B()
         self.optimizer_D_B.step()
-
-    def test(self):
-        real_A = Variable(self.input_A, volatile=True)
-        fake_B = self.netG_A(real_A)
-        self.rec_A = self.netG_B(fake_B).data
-        self.fake_B = fake_B.data
-
-        real_B = Variable(self.input_B, volatile=True)
-        fake_A = self.netG_B(real_B)
-        self.rec_B = self.netG_A(fake_A).data
-        self.fake_A = fake_A.data
-
-    def translateA(self, input_A):
-        self.netG_A.eval()
-        real_A = Variable(input_A, volatile=True)
-        fake_B = self.netG_A(real_A)
-        im_fake_B = util.tensor2im(fake_B.data)
-        return im_fake_B
-
-    def translateB(self, input_B):
-        self.netG_B.eval()
-        real_B = Variable(input_B, volatile=True)
-        fake_A = self.netG_A(real_B)
-        im_fake_A = util.tensor2im(fake_A.data)
-        return im_fake_A
 
     def get_current_errors(self):
         ret_errors = OrderedDict([('D_A', self.loss_D_A), ('G_A', self.loss_G_A), ('Cyc_A', self.loss_cycle_A),

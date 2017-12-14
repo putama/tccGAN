@@ -31,11 +31,15 @@ def load_flownet(path=None):
     if path == None:
         path = './models/opt/pretrained_model/flownets_from_caffe.pth.tar.pth'
     # Load pretrained model
-    pre_model = opt.FlowNetS(batchNorm=False).cuda()
+    pre_model = opt.FlowNetS(batchNorm=False)
+
     pre_model_info = torch.load(path)
     # pre_model.load_state_dict(pre_model_info['state_dict'])
     pre_model.load_state_dict(pre_model_info)
-    pre_model.cuda()
+
+    if torch.cuda.is_available():
+        pre_model.cuda()
+
     # print("Load trained model ... epoch = %d" %(pre_model_info['epoch']))
     for param in pre_model.parameters():
         param.requires_grad = False
