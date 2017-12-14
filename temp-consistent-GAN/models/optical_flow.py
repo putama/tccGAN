@@ -5,7 +5,8 @@ import torch.nn as nn
 import opt
 from torch.autograd import Variable
 
-def compute_opt_flow(imgs, net):
+def compute_opt_flow(imgs, net, gpu_ids=[]):
+    use_gpu = len(gpu_ids) > 0
     nframe, _, imh, imw = imgs.size() # n, c, h, w
     imgs = imgs.data
 
@@ -15,19 +16,25 @@ def compute_opt_flow(imgs, net):
         input_t1_v = torch.cat((input_t1_v, inv[i,...].unsqueeze(0)), 0)
         input_t2_v = torch.cat((input_t2_v, inv[i,...].unsqueeze(0)), 0)
     # change to n/2, 6, h, w
-    input_v = Variable(torch.cat([input_t1_v, input_t2_v], 1), volatile = True).cuda()
+    input_v = Variable(torch.cat([input_t1_v, input_t2_v], 1), volatile = True)
     b, _, h, w = input_v.size()
-    
+
+    if use_gpu:
+        input_v.cuda()
     output = net(input_v)
     
     upsampled_output = nn.functional.upsample(output, size=(h,w), mode='bilinear')
-    flow = Variable(upsampled_output.data[0]).cuda() # nbatch-1, 2, h, w
-    flow = flow.permute(0, 2, 3, 1)
-    assert [nframe, h, w, 2] == flow.size()
-    
-    return flow
+    flow_v = Variable(upsampled_output.data[0]) # nbatch-1, 2, h, w
+    flow_v = flow_v.permute(0, 2, 3, 1)
+    assert [nframe, h, w, 2] == flow_v.size()
 
-def load_flownet(path=None):
+    if use_gpu:
+        flow_v.cuda()
+        
+    return flow_v
+
+def load_flownet(gpu_ids=[], path=None):
+    use_gpu = len(gpu_ids) > 0
     if path == None:
         path = './models/opt/pretrained_model/flownets_from_caffe.pth.tar.pth'
     # Load pretrained model
@@ -37,8 +44,8 @@ def load_flownet(path=None):
     # pre_model.load_state_dict(pre_model_info['state_dict'])
     pre_model.load_state_dict(pre_model_info)
 
-    if torch.cuda.is_available():
-        pre_model.cuda()
+    if torch.cuda.is_available() and use_gpu:
+        pre_model.cuda(gpu_ids[0])
 
     # print("Load trained model ... epoch = %d" %(pre_model_info['epoch']))
     for param in pre_model.parameters():

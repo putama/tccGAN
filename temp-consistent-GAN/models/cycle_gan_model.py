@@ -37,7 +37,7 @@ class CycleGANModel(BaseModel):
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
-        self.flownet = load_flownet()
+        self.flownet = load_flownet(self.gpu_ids)
         
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
@@ -179,7 +179,7 @@ class CycleGANModel(BaseModel):
         # Domain A temporal loss -- handle minibatch
         loss_temporal_A = None
         for i in range(self.opt.batchSize):
-            flows_A = compute_opt_flow(self.real_A[i*2:(i*2)+2], self.flownet)
+            flows_A = compute_opt_flow(self.real_A[i*2:(i*2)+2], self.flownet, self.gpu_ids)
             prevframes_A = fake_A[i*2:(i*2)+1]
             nextframes_A = fake_A[(i*2)+1:(i*2)+2]
             warped_A = grid_sample(prevframes_A, flows_A)
@@ -198,7 +198,7 @@ class CycleGANModel(BaseModel):
         # Domain B temporal loss -- handle minibatch
         loss_temporal_B = None
         for i in range(self.opt.batchSize):
-            flows_B = compute_opt_flow(self.real_B[i * 2:(i * 2) + 2], self.flownet)
+            flows_B = compute_opt_flow(self.real_B[i * 2:(i * 2) + 2], self.flownet, self.gpu_ids)
             prevframes_B = fake_B[i * 2:(i * 2) + 1]
             nextframes_B = fake_B[(i * 2) + 1:(i * 2) + 2]
             warped_B = grid_sample(prevframes_B, flows_B)
