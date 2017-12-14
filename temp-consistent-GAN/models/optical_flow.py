@@ -6,20 +6,24 @@ import opt
 from torch.autograd import Variable
 
 def compute_opt_flow(imgs, net):
-    print(imgs.size())
-    imh, imw = imgs.size()[2:4]
-    nframe = imgs.size()[0] - 1
-    input_var = Variable(torch.cat(imgs[0:2,...].data,0).unsqueeze(0).cuda(), volatile=True)
-    for i in range(2,nframe+1):
-        input_var.stack(Variable(torch.cat(imgs[i:i+2,...].data,0).unsqueeze(0).cuda(), volatile=True))
-    b, _, h, w = input_var.size()
-    output = net(input_var)
+    nframe, _, imh, imw = imgs.size() # n, c, h, w
+    imgs = imgs.data
+
+    input_t1_v = imgs[0,...].unsqueeze(0)
+    input_t2_v = imgs[1,...].unsqueeze(0)
+    for i in range(2, imgs.size()[0], 2):
+        input_t1_v = torch.cat((input_t1_v, inv[i,...].unsqueeze(0)), 0)
+        input_t2_v = torch.cat((input_t2_v, inv[i,...].unsqueeze(0)), 0)
+    # change to n/2, 6, h, w
+    input_v = Variable(torch.cat([input_t1_v, input_t2_v], 1), volatile = True)
+    b, _, h, w = input_v.size()
+    
+    output = net(input_v)
+    
     upsampled_output = nn.functional.upsample(output, size=(h,w), mode='bilinear')
-    flow = Variable(upsampled_output.data[0]).cuda()
-    flow = flow.permute(1, 2, 0).unsqueeze(0)
-    print(flow.size())
-    b_out, h_out, w_out, c_out = flow.size()
-    assert nframe == b_out and h == h_out and w == w_out and c_out == 2
+    flow = Variable(upsampled_output.data[0]).cuda() # nbatch-1, 2, h, w
+    flow = flow.permute(0, 2, 3, 1)
+    assert [nframe, h, w, 2] == flow.size()
     
     return flow
 
