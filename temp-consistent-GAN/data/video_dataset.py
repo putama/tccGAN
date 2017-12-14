@@ -9,7 +9,7 @@ import torch
 class VideoDataset(BaseDataset):
 
     def initialize(self, opt):
-        default_offset = 2
+        default_offset = 1
         self.opt = opt
         self.root = opt.dataroot
         self.dir_A = os.path.join(opt.dataroot, 'train_A')
