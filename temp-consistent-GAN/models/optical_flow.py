@@ -15,7 +15,7 @@ def compute_opt_flow(imgs, net):
         input_t1_v = torch.cat((input_t1_v, inv[i,...].unsqueeze(0)), 0)
         input_t2_v = torch.cat((input_t2_v, inv[i,...].unsqueeze(0)), 0)
     # change to n/2, 6, h, w
-    input_v = Variable(torch.cat([input_t1_v, input_t2_v], 1), volatile = True)
+    input_v = Variable(torch.cat([input_t1_v, input_t2_v], 1), volatile = True).cuda()
     b, _, h, w = input_v.size()
     
     output = net(input_v)
