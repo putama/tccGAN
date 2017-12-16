@@ -37,6 +37,7 @@ for i, data in enumerate(dataset):
             break
         filepath = rootpath + "fake_A_{}.jpg".format(str(i))
         im_fake = model.translateB(data['B'][0])
+        historydict[data['B_paths'][0]] = 1
     save_image(im_fake, filepath)
     print "saved to " + filepath
     out.write(im_fake)
