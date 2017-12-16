@@ -123,8 +123,8 @@ class CycleGANModel(BaseModel):
         pred_fake = netD(fake.detach())
         loss_D_fake = self.criterionGAN(pred_fake, False)
         # Combined loss
-	weight = (self.opt.lambda_A + self.opt.lambda_B) * 0.5
-	loss_D = (loss_D_real + loss_D_fake) * 0.5 * weight
+        # weight = (self.opt.lambda_A + self.opt.lambda_B) * 0.5
+        loss_D = (loss_D_real + loss_D_fake) * 0.5 # * weight
         # backward
         loss_D.backward()
         return loss_D
@@ -194,7 +194,7 @@ class CycleGANModel(BaseModel):
                     loss_temporal_A = pair_loss_A
                 else:
                     loss_temporal_A = loss_temporal_A + pair_loss_A
-            loss_temporal_A = (loss_temporal_A / self.opt.batchSize) * (lambda_A * 0.25)
+            loss_temporal_A = (loss_temporal_A / self.opt.batchSize) * (lambda_A * 0.5)
             # flows_A = compute_opt_flow(self.real_A, self.flownet)
             # prevframes_A = fake_A[0:-1]
             # nextframes_A = fake_A[1:]
@@ -213,7 +213,7 @@ class CycleGANModel(BaseModel):
                     loss_temporal_B = pair_loss_B
                 else:
                     loss_temporal_B = loss_temporal_B + pair_loss_B
-            loss_temporal_B = (loss_temporal_B / self.opt.batchSize) * (lambda_B * 0.25)
+            loss_temporal_B = (loss_temporal_B / self.opt.batchSize) * (lambda_B * 0.5)
             # flows_B = compute_opt_flow(self.real_B, self.flownet)
             # prevframes_B = fake_B[0:-1]
             # nextframes_B = fake_B[1:]
