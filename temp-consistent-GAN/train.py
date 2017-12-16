@@ -14,6 +14,9 @@ model = create_model(opt)
 visualizer = Visualizer(opt)
 total_steps = 0
 
+# compute temporal loss
+model.video_mode = True
+
 for epoch in range(opt.epoch_count, opt.niter + opt.niter_decay + 1):
     epoch_start_time = time.time()
     epoch_iter = 0
