@@ -228,6 +228,8 @@ class CycleGANModel(BaseModel):
         if self.video_mode:
             # adding temporal loss to combined G loss
             loss_G = loss_G + loss_temporal_A + loss_temporal_B
+            self.loss_temporal_A = loss_temporal_A.data[0]
+            self.loss_temporal_B = loss_temporal_B.data[0]
 
         # backward G
         loss_G.backward()
@@ -237,8 +239,6 @@ class CycleGANModel(BaseModel):
         self.rec_A = rec_A.data
         self.rec_B = rec_B.data
 
-        self.loss_temporal_A = loss_temporal_A.data[0]
-        self.loss_temporal_B = loss_temporal_B.data[0]
         self.loss_G_A = loss_G_A.data[0]
         self.loss_G_B = loss_G_B.data[0]
         self.loss_cycle_A = loss_cycle_A.data[0]
