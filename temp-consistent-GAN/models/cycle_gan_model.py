@@ -22,6 +22,9 @@ class CycleGANModel(BaseModel):
     def initialize(self, opt):
         BaseModel.initialize(self, opt)
 
+        # video mode to minimize temporal loss
+        self.video_mode = False
+
         nb = opt.batchSize
         size = opt.fineSize
         self.input_A = self.Tensor(nb, opt.input_nc, size, size)
@@ -177,48 +180,55 @@ class CycleGANModel(BaseModel):
         rec_B = self.netG_A(fake_A)
         loss_cycle_B = self.criterionCycle(rec_B, self.real_B) * lambda_B
 
-        # Domain A temporal loss -- handle minibatch
-        loss_temporal_A = None
-        for i in range(self.opt.batchSize):
-            flows_A = compute_opt_flow(self.real_A[i*2:(i*2)+2], self.flownet, self.gpu_ids)
-            prevframes_A = fake_A[i*2:(i*2)+1]
-            nextframes_A = fake_A[(i*2)+1:(i*2)+2]
-            warped_A = grid_sample(prevframes_A, flows_A)
-            pair_loss_A = self.criterionTemporal(nextframes_A, warped_A.detach())
-            if loss_temporal_A is None:
-                loss_temporal_A = pair_loss_A
-            else:
-                loss_temporal_A = loss_temporal_A + pair_loss_A
-        loss_temporal_A = (loss_temporal_A / self.opt.batchSize) * (lambda_A * 0.25)
-        # flows_A = compute_opt_flow(self.real_A, self.flownet)
-        # prevframes_A = fake_A[0:-1]
-        # nextframes_A = fake_A[1:]
-        # warped_A = grid_sample(prevframes_A, flows_A)
-        # loss_temporal_A = self.criterionTemporal(nextframes_A, warped_A.detach()) * lambda_A
+        if self.video_mode:
+            print "(v) with optical flow"
+            # Domain A temporal loss -- handle minibatch
+            loss_temporal_A = None
+            for i in range(self.opt.batchSize):
+                flows_A = compute_opt_flow(self.real_A[i*2:(i*2)+2], self.flownet, self.gpu_ids)
+                prevframes_A = fake_A[i*2:(i*2)+1]
+                nextframes_A = fake_A[(i*2)+1:(i*2)+2]
+                warped_A = grid_sample(prevframes_A, flows_A)
+                pair_loss_A = self.criterionTemporal(nextframes_A, warped_A.detach())
+                if loss_temporal_A is None:
+                    loss_temporal_A = pair_loss_A
+                else:
+                    loss_temporal_A = loss_temporal_A + pair_loss_A
+            loss_temporal_A = (loss_temporal_A / self.opt.batchSize) * (lambda_A * 0.25)
+            # flows_A = compute_opt_flow(self.real_A, self.flownet)
+            # prevframes_A = fake_A[0:-1]
+            # nextframes_A = fake_A[1:]
+            # warped_A = grid_sample(prevframes_A, flows_A)
+            # loss_temporal_A = self.criterionTemporal(nextframes_A, warped_A.detach()) * lambda_A
 
-        # Domain B temporal loss -- handle minibatch
-        loss_temporal_B = None
-        for i in range(self.opt.batchSize):
-            flows_B = compute_opt_flow(self.real_B[i * 2:(i * 2) + 2], self.flownet, self.gpu_ids)
-            prevframes_B = fake_B[i * 2:(i * 2) + 1]
-            nextframes_B = fake_B[(i * 2) + 1:(i * 2) + 2]
-            warped_B = grid_sample(prevframes_B, flows_B)
-            pair_loss_B = self.criterionTemporal(nextframes_B, warped_B.detach())
-            if loss_temporal_B is None:
-                loss_temporal_B = pair_loss_B
-            else:
-                loss_temporal_B = loss_temporal_B + pair_loss_B
-        loss_temporal_B = (loss_temporal_B / self.opt.batchSize) * (lambda_B * 0.25)
-        # flows_B = compute_opt_flow(self.real_B, self.flownet)
-        # prevframes_B = fake_B[0:-1]
-        # nextframes_B = fake_B[1:]
-        # warped_B = grid_sample(prevframes_B, flows_B)
-        # loss_temporal_B = self.criterionTemporal(nextframes_B, warped_B.detach()) * lambda_B
+            # Domain B temporal loss -- handle minibatch
+            loss_temporal_B = None
+            for i in range(self.opt.batchSize):
+                flows_B = compute_opt_flow(self.real_B[i * 2:(i * 2) + 2], self.flownet, self.gpu_ids)
+                prevframes_B = fake_B[i * 2:(i * 2) + 1]
+                nextframes_B = fake_B[(i * 2) + 1:(i * 2) + 2]
+                warped_B = grid_sample(prevframes_B, flows_B)
+                pair_loss_B = self.criterionTemporal(nextframes_B, warped_B.detach())
+                if loss_temporal_B is None:
+                    loss_temporal_B = pair_loss_B
+                else:
+                    loss_temporal_B = loss_temporal_B + pair_loss_B
+            loss_temporal_B = (loss_temporal_B / self.opt.batchSize) * (lambda_B * 0.25)
+            # flows_B = compute_opt_flow(self.real_B, self.flownet)
+            # prevframes_B = fake_B[0:-1]
+            # nextframes_B = fake_B[1:]
+            # warped_B = grid_sample(prevframes_B, flows_B)
+            # loss_temporal_B = self.criterionTemporal(nextframes_B, warped_B.detach()) * lambda_B
+        else:
+            print "(x) without optical flow"
 
         # combined loss
         loss_G = loss_G_A + loss_G_B + loss_cycle_A + loss_cycle_B + loss_idt_A + loss_idt_B
-        # adding temporal loss to combined G loss
-        loss_G = loss_G + loss_temporal_A + loss_temporal_B
+
+        if self.video_mode:
+            # adding temporal loss to combined G loss
+            loss_G = loss_G + loss_temporal_A + loss_temporal_B
+
         # backward G
         loss_G.backward()
 
