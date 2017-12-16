@@ -14,9 +14,9 @@ def compute_opt_flow(imgs, net, gpu_ids=[]):
 
     input_t1_v = imgs[0,...].unsqueeze(0)
     input_t2_v = imgs[1,...].unsqueeze(0)
-    for i in range(2, imgs.size()[0], 2):
-        input_t1_v = torch.cat((input_t1_v, inv[i,...].unsqueeze(0)), 0)
-        input_t2_v = torch.cat((input_t2_v, inv[i,...].unsqueeze(0)), 0)
+    for i in range(2, imgs.size()[0]-1, 2):
+        input_t1_v = torch.cat((input_t1_v, imgs[i,...].unsqueeze(0)), 0)
+        input_t2_v = torch.cat((input_t2_v, imgs[i+1,...].unsqueeze(0)), 0)
     # change to n/2, 6, h, w
     input_v = Variable(torch.cat([input_t1_v, input_t2_v], 1), volatile = True)
     b, _, h, w = input_v.size()
