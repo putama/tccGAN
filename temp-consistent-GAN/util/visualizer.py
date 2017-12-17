@@ -162,11 +162,13 @@ class Visualizer_Tensorboard():
             self.writer.add_image(str(label), img[[0, 1, 2], ...], idx)
             idx += 1
 
+            '''
             if save_result:
                 img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))
                 image_numpy = util.tensor2im(image_tensor)
                 image_numpy = image_numpy.transpose([2, 0, 1])
                 util.save_image(image_numpy, img_path)
+                '''
 
     def plot_current_errors(self, epoch, counter_ratio, opt, errors):
         
