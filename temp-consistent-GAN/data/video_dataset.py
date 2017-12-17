@@ -86,8 +86,6 @@ class VideoDataset(BaseDataset):
         if height < image1.height and width < image1.width:
             random_x = random.randint(0, image1.width - width - 1)
             random_y = random.randint(0, image1.height - height - 1)
-            print random_x
-            print random_y
             image1crop = image1.crop((random_x, random_y, random_x + width, random_y + height))
             image2crop = image2.crop((random_x, random_y, random_x + width, random_y + height))
 
