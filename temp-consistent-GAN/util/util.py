@@ -7,6 +7,7 @@ import numpy as np
 import os
 import shutil
 import collections
+import cv2
 
 # Converts a Tensor into a Numpy array
 # |imtype|: the desired type of the converted numpy array
@@ -89,3 +90,19 @@ def load_flo(path):
     data2D = np.resize(data, (w, h, 2))
     return data2D
 
+def create_log_path():
+    import socket
+    from datetime import datetime
+    log_dir = os.path.join('runs', datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname())
+    return log_dir
+
+def video_writer(direction, epoch, log_dir):
+    log_dir = os.path.join(log_dir, direction, str(epoch))
+    mkdir(log_dir)
+    frame_width = 256
+    frame_height = 256
+    filepath = os.path.join(log_dir, "video.avi")
+    print("Saving video to %s" % (str(filepath)))
+    out = cv2.VideoWriter(filepath, cv2.VideoWriter_fourcc('M','J','P','G'), 20, (frame_width,frame_height))
+
+    return out

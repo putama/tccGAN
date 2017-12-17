@@ -20,7 +20,7 @@ opt.serial_batches = True  # no shuffle
 opt.no_flip = True  # no flip
 AtoB = opt.which_direction == 'AtoB'
 
-data_loader = CreateDataLoader(opt)
+data_loader = CreateDataLoader(opt, "test")
 dataset = data_loader.load_data()
 model = create_model(opt)
 
