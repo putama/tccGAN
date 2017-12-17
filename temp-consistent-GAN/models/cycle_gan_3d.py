@@ -3,6 +3,7 @@ import torch
 import os
 from collections import OrderedDict
 from torch.autograd import Variable
+import torch.functional
 import itertools
 import util.util as util
 from util.image_pool import ImagePool
@@ -11,9 +12,9 @@ from . import networks
 import sys
 
 
-class CycleGANModel(BaseModel):
+class CycleGAN3dModel(BaseModel):
     def name(self):
-        return 'CycleGANModel'
+        return 'CycleGAN3dModel'
 
     def initialize(self, opt):
         BaseModel.initialize(self, opt)
@@ -26,13 +27,18 @@ class CycleGANModel(BaseModel):
         # load/define networks
         # The naming conversion is different from those used in the paper
         # Code (paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
-
+        opt.input_nc = nb * 2
+        opt.output_nc = nb * 2
+        opt.ngf = 8
+        opt.which_model_netG = "resnet_3d"
+        opt.which_model_netD = "basic3d"
         self.netG_A = networks.define_G(opt.input_nc, opt.output_nc,
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
 
         if self.isTrain:
+            opt.ngf = 16
             use_sigmoid = opt.no_lsgan
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf,
                                             opt.which_model_netD,
@@ -86,8 +92,8 @@ class CycleGANModel(BaseModel):
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
     def forward(self):
-        self.real_A = Variable(self.input_A)
-        self.real_B = Variable(self.input_B)
+        self.real_A = Variable(self.input_A.unsqueeze(0))
+        self.real_B = Variable(self.input_B.unsqueeze(0))
 
     def test(self):
         real_A = Variable(self.input_A, volatile=True)

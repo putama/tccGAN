@@ -13,6 +13,10 @@ class BaseDataset(data.Dataset):
         pass
 
 def get_transform(opt):
+    if opt.dataset_mode == "video":
+        opt.resize_or_crop = "scale_width"
+        opt.no_flip = True
+
     transform_list = []
     if opt.resize_or_crop == 'resize_and_crop':
         osize = [opt.loadSize, opt.loadSize]

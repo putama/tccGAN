@@ -2,7 +2,6 @@ import os.path
 import torchvision.transforms as transforms
 from data.base_dataset import BaseDataset, get_transform
 from PIL import Image
-import PIL
 import random
 import torch
 
@@ -42,6 +41,10 @@ class VideoDataset(BaseDataset):
         B1_img = Image.open(B_tuple[0]).convert('RGB')
         B2_img = Image.open(B_tuple[1]).convert('RGB')
 
+        # jittering of the images
+        A1_img, A2_img = self.pair_random_transform(A1_img, A2_img)
+        B1_img, B2_img = self.pair_random_transform(B1_img, B2_img)
+
         A1 = self.transform(A1_img)
         A2 = self.transform(A2_img)
         B1 = self.transform(B1_img)
@@ -72,6 +75,26 @@ class VideoDataset(BaseDataset):
 
         return {'A': A, 'B': B,
                 'A_paths': A_tuple, 'B_paths': B_tuple}
+
+    def pair_random_transform(self, image1, image2):
+        width = self.opt.fineSize
+        height = self.opt.fineSize
+        assert image1.size == image2.size
+
+        image1crop = image1
+        image2crop = image2
+        if height < image1.height and width < image1.width:
+            random_x = random.randint(0, image1.width - width - 1)
+            random_y = random.randint(0, image1.height - height - 1)
+            image1crop = image1.crop((random_x, random_y, random_x + width, random_y + height))
+            image2crop = image2.crop((random_x, random_y, random_x + width, random_y + height))
+
+        # random horizontal flip
+        if random.uniform(0,1) > 0.5:
+            image1crop = image1crop.transpose(Image.FLIP_LEFT_RIGHT)
+            image2crop = image2crop.transpose(Image.FLIP_LEFT_RIGHT)
+
+        return image1crop, image2crop
 
     # did some testing of this already locally, I think this is good to go
     # won't behave well in certain edge cases, like when there are no flows in a directory
