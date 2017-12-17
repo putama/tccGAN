@@ -194,7 +194,7 @@ class CycleGANModel(BaseModel):
                     loss_temporal_A = pair_loss_A
                 else:
                     loss_temporal_A = loss_temporal_A + pair_loss_A
-            loss_temporal_A = (loss_temporal_A / self.opt.batchSize) * (lambda_A * 0.5)
+            loss_temporal_A = (loss_temporal_A / self.opt.batchSize) * (lambda_A * 0.25)
             # flows_A = compute_opt_flow(self.real_A, self.flownet)
             # prevframes_A = fake_A[0:-1]
             # nextframes_A = fake_A[1:]
@@ -213,7 +213,7 @@ class CycleGANModel(BaseModel):
                     loss_temporal_B = pair_loss_B
                 else:
                     loss_temporal_B = loss_temporal_B + pair_loss_B
-            loss_temporal_B = (loss_temporal_B / self.opt.batchSize) * (lambda_B * 0.5)
+            loss_temporal_B = (loss_temporal_B / self.opt.batchSize) * (lambda_B * 0.25)
             # flows_B = compute_opt_flow(self.real_B, self.flownet)
             # prevframes_B = fake_B[0:-1]
             # nextframes_B = fake_B[1:]
