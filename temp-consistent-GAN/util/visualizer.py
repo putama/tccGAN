@@ -4,6 +4,8 @@ import ntpath
 import time
 from . import util
 from . import html
+from tensorboardX import SummaryWriter
+import torch
 
 
 class Visualizer():
@@ -142,3 +144,58 @@ class Visualizer():
             txts.append(label)
             links.append(image_name)
         webpage.add_images(ims, txts, links, width=self.win_size)
+
+
+class Visualizer_Tensorboard():
+    def __init__(self, opt):
+        log_dir = self._create_log_path()
+        self.save_path = os.path.join("logs", opt.name, log_dir)
+        self.writer = SummaryWriter(self.save_path)
+        self.img_dir = os.path.join(opt.checkpoints_dir, opt.name, 'images')
+        print('create img directory %s...' % self.img_dir)
+        util.mkdirs([self.img_dir])
+
+    def display_current_results(self, visuals, epoch, save_result):
+        idx = 0
+        for label, image_tensor in visuals.items():
+            img = image_tensor
+            self.writer.add_image(str(label), img[[0, 1, 2], ...], idx)
+            idx += 1
+
+            if save_result:
+                img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))
+                image_numpy = util.tensor2im(image_tensor)
+                image_numpy = image_numpy.transpose([2, 0, 1])
+                util.save_image(image_numpy, img_path)
+
+    def plot_current_errors(self, epoch, counter_ratio, opt, errors):
+        
+        self.plot_data = {'X': [], 'Y': [], 'legend': list(errors.keys())}
+        self.plot_data['X'].append(epoch + counter_ratio)
+        self.plot_data['Y'].append([errors[k] for k in self.plot_data['legend']])
+        self.plot_data['X'] = np.stack([np.array(self.plot_data['X'])] * len(self.plot_data['legend']), 1)
+
+        print((self.plot_data['legend'], self.plot_data['Y'], self.plot_data['X']))
+        for i in range(len(self.plot_data['Y'][0])):
+            self.writer.add_scalar(self.plot_data['legend'][i], self.plot_data['Y'][0][i], self.plot_data['X'][0][i].item())
+        self.writer.add_scalar("Loss_sum", sum(self.plot_data['Y'][0]), self.plot_data['X'][0][1].item())
+
+    # save image to the disk
+    def save_images(self, webpage, visuals, image_path):
+        image_dir = webpage.get_image_dir()
+        short_path = ntpath.basename(image_path[0])
+        name = os.path.splitext(short_path)[0]
+
+        webpage.add_header(name)
+
+        for label, image_numpy in visuals.items():
+            image_name = '%s_%s.png' % (name, label)
+            save_path = os.path.join(image_dir, image_name)
+            util.save_image(image_numpy, save_path)
+        
+    def _create_log_path(self):
+        import socket
+        from datetime import datetime
+        log_dir = os.path.join('runs', datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname())
+        return log_dir
+        
