@@ -102,7 +102,6 @@ def video_writer(direction, epoch, log_dir):
     frame_width = 256
     frame_height = 256
     filepath = os.path.join(log_dir, "video.avi")
-    print("Saving video to %s" % (str(filepath)))
     out = cv2.VideoWriter(filepath, cv2.VideoWriter_fourcc('M','J','P','G'), 20, (frame_width,frame_height))
 
     return out
