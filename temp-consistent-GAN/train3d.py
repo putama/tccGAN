@@ -3,6 +3,7 @@ from options.train_options import TrainOptions
 from data.data_loader import CreateDataLoader
 from models.models import create_model
 from util.visualizer import Visualizer
+from models.cycle_gan_3d import CycleGAN3dModel
 
 opt = TrainOptions().parse()
 data_loader = CreateDataLoader(opt)
@@ -10,7 +11,10 @@ dataset = data_loader.load_data()
 dataset_size = len(data_loader)
 print('#training images = %d' % dataset_size)
 
-model = create_model(opt)
+model = CycleGAN3dModel()
+model.initialize(opt)
+print("model [%s] was created" % (model.name()))
+
 visualizer = Visualizer(opt)
 total_steps = 0
 
