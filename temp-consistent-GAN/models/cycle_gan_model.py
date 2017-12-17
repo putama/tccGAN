@@ -181,7 +181,7 @@ class CycleGANModel(BaseModel):
         loss_cycle_B = self.criterionCycle(rec_B, self.real_B) * lambda_B
 
         if self.video_mode:
-            print "(v) with optical flow"
+            # print "(v) with optical flow"
             # Domain A temporal loss -- handle minibatch
             loss_temporal_A = None
             for i in range(self.opt.batchSize):
@@ -220,7 +220,8 @@ class CycleGANModel(BaseModel):
             # warped_B = grid_sample(prevframes_B, flows_B)
             # loss_temporal_B = self.criterionTemporal(nextframes_B, warped_B.detach()) * lambda_B
         else:
-            print "(x) without optical flow"
+            # print "(x) without optical flow"
+            pass
 
         # combined loss
         loss_G = loss_G_A + loss_G_B + loss_cycle_A + loss_cycle_B + loss_idt_A + loss_idt_B
@@ -310,6 +311,20 @@ class CycleGANModel(BaseModel):
             ret_visuals['idt_A'] = util.tensor2im(self.idt_A)
             ret_visuals['idt_B'] = util.tensor2im(self.idt_B)
         return ret_visuals
+    
+    def get_current_tensors(self):
+        ret_tensors = OrderedDict([('real_A', self.input_A), ('fake_B', self.fake_B), ('rec_A', self.rec_A),
+                                   ('real_B', self.input_B), ('fake_A', self.fake_A), ('rec_B', self.rec_B)])
+            
+        if self.opt.isTrain and self.opt.identity > 0.0:
+            ret_tensors['idt_A'] = self.idt_A
+            ret_tensors['idt_B'] = self.idt_B
+
+        for key, value in ret_tensors.items():
+            ret_tensors[key] = (value[0].cpu().float() + 1) / 2.0
+            
+        
+        return ret_tensors
 
     def save(self, label):
         self.save_network(self.netG_A, 'G_A', label, self.gpu_ids)
