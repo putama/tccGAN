@@ -5,6 +5,7 @@ from util.util import save_image
 from util.util import tensor2im
 from util.util import mkdirreplace
 import cv2
+import numpy as np
 
 opt = TestOptions().parse()
 opt.nThreads = 1   # test code only supports nThreads = 1
@@ -24,7 +25,7 @@ model = create_model(opt)
 
 frame_width = 256
 frame_height = 256
-out = cv2.VideoWriter(opt.name+'.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 20, (frame_width,frame_height))
+out = cv2.VideoWriter(opt.name+'.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 20, (frame_width * 2,frame_height))
 
 historydict = {}
 for i, data in enumerate(dataset):
@@ -33,10 +34,12 @@ for i, data in enumerate(dataset):
             break
         im_fake = model.translateA(data['A'])
         historydict[data['A_paths'][0]] = 1
+	im_fake = np.concatenate((tensor2im(data['A'][:, [2, 1, 0], ...]), im_fake), axis=1)
     else:
         if historydict.has_key(data['B_paths'][0]):
             break
         im_fake = model.translateB(data['B'][0])
         historydict[data['B_paths'][0]] = 1
+	im_fake = np.concatenate((tensor2im(data['B'][:, [2, 1, 0], ...]), im_fake), axis=1)
     out.write(im_fake)
 out.release()
