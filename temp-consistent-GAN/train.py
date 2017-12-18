@@ -34,7 +34,9 @@ total_steps = 0
 
 # compute temporal loss
 if opt.dataset_mode == "video":
-    model.video_mode = True
+    model.video_mode = False
+    print("Using temporal loss?")
+    print(model.video_mode)
 
 for epoch in range(opt.epoch_count, opt.niter + opt.niter_decay + 1):
     model.train()

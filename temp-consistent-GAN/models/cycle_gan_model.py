@@ -278,7 +278,7 @@ class CycleGANModel(BaseModel):
         if torch.cuda.is_available():
             real_A = real_A.cuda()
         fake_B = self.netG_A(real_A)
-        im_fake_B = util.tensor2im(fake_B.data)
+        im_fake_B = util.tensor2im(fake_B.data[:, [2, 1, 0], ...])
         return im_fake_B
 
     def translateB(self, input_B):
@@ -286,8 +286,8 @@ class CycleGANModel(BaseModel):
         real_B = Variable(input_B, volatile=True)
         if torch.cuda.is_available():
             real_B = real_B.cuda()
-        fake_A = self.netG_A(real_B)
-        im_fake_A = util.tensor2im(fake_A.data)
+        fake_A = self.netG_B(real_B)
+        im_fake_A = util.tensor2im(fake_A.data[:, [2, 1, 0], ...])
         return im_fake_A
 
     def train(self):
@@ -296,11 +296,15 @@ class CycleGANModel(BaseModel):
         
     def get_current_errors(self):
         ret_errors = OrderedDict([('D_A', self.loss_D_A), ('G_A', self.loss_G_A), ('Cyc_A', self.loss_cycle_A),
-                                 ('D_B', self.loss_D_B), ('G_B', self.loss_G_B), ('Cyc_B',  self.loss_cycle_B),
-                                  ('T_A', self.loss_temporal_A), ('T_B', self.loss_temporal_B)])
+                                 ('D_B', self.loss_D_B), ('G_B', self.loss_G_B), ('Cyc_B',  self.loss_cycle_B)])
         if self.opt.identity > 0.0:
             ret_errors['idt_A'] = self.loss_idt_A
             ret_errors['idt_B'] = self.loss_idt_B
+            
+        if self.video_mode == True:
+            ret_errors['T_A'] = self.loss_temporal_A
+            ret_errors['T_B'] = self.loss_temporal_B
+        
         return ret_errors
 
     def get_current_visuals(self):
