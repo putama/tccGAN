@@ -90,10 +90,13 @@ def load_flo(path):
     data2D = np.resize(data, (w, h, 2))
     return data2D
 
-def create_log_path():
+def create_log_path(opt):
     import socket
     from datetime import datetime
-    log_dir = os.path.join('runs', datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname())
+    info = datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname()
+    info = info + "-tempo_" + str(opt.tempo) + "-idt_" + str(opt.identity)
+    
+    log_dir = os.path.join('runs', info)
     return log_dir
 
 def video_writer(direction, epoch, log_dir):
