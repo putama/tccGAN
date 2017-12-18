@@ -213,11 +213,11 @@ class CycleGAN3dModel(BaseModel):
 
     def get_current_visuals(self):
         real_A = util.tensor2im(self.input_A)
-        fake_B = util.tensor2im(self.fake_B)
-        rec_A = util.tensor2im(self.rec_A)
+        fake_B = util.tensor2im(self.fake_B[0])
+        rec_A = util.tensor2im(self.rec_A[0])
         real_B = util.tensor2im(self.input_B)
-        fake_A = util.tensor2im(self.fake_A)
-        rec_B = util.tensor2im(self.rec_B)
+        fake_A = util.tensor2im(self.fake_A[0])
+        rec_B = util.tensor2im(self.rec_B[0])
         ret_visuals = OrderedDict([('real_A', real_A), ('fake_B', fake_B), ('rec_A', rec_A),
                                    ('real_B', real_B), ('fake_A', fake_A), ('rec_B', rec_B)])
         if self.opt.isTrain and self.opt.identity > 0.0:
