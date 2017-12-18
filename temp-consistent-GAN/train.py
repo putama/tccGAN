@@ -1,8 +1,5 @@
 import time
-<<<<<<< HEAD
-=======
 import os
->>>>>>> 0cbd6819bb3f8d7b860c0e27b9c3a802eddcb150
 import sys
 from options.train_options import TrainOptions
 from data.data_loader import CreateDataLoader
@@ -14,7 +11,7 @@ from options.video_options import create_video_opt
 
 opt = TrainOptions().parse()
 
-log_dir = os.path.join("logs", opt.name, create_log_path())
+log_dir = os.path.join("logs", opt.name, create_log_path(opt))
 print("Saving log to %s" % (log_dir))
 
 data_loader = CreateDataLoader(opt)
@@ -37,7 +34,7 @@ total_steps = 0
 
 # compute temporal loss
 if opt.dataset_mode == "video":
-    model.video_mode = False
+    model.video_mode = (opt.tempo > 0)
     print("Using temporal loss?")
     print(model.video_mode)
 
@@ -84,10 +81,11 @@ for epoch in range(opt.epoch_count, opt.niter + opt.niter_decay + 1):
         video_writer_A = video_writer("A", epoch, log_dir)
         video_writer_B = video_writer("B", epoch, log_dir)
         for i, data in enumerate(test_dataset):
+            model.set_input(data)
             if hdict_A.has_key(data['A_paths'][0]) and hdict_B.has_key(data['B_paths'][0]):
                 break
-            video_writer_A.write(model.translateA(data['A']))
-            video_writer_B.write(model.translateB(data['B']))
+            video_writer_A.write(model.translateA())
+            video_writer_B.write(model.translateB())
             hdict_A[data['A_paths'][0]] = 1
             hdict_B[data['B_paths'][0]] = 1
         video_writer_A.release()

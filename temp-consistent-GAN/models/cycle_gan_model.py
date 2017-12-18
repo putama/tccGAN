@@ -228,6 +228,9 @@ class CycleGANModel(BaseModel):
 
         if self.video_mode:
             # adding temporal loss to combined G loss
+            loss_temporal_A = loss_temporal_A * self.opt.tempo 
+            loss_temporal_B = loss_temporal_B * self.opt.tempo 
+            
             loss_G = loss_G + loss_temporal_A + loss_temporal_B
             self.loss_temporal_A = loss_temporal_A.data[0]
             self.loss_temporal_B = loss_temporal_B.data[0]
@@ -272,18 +275,18 @@ class CycleGANModel(BaseModel):
         self.rec_B = self.netG_A(fake_A).data
         self.fake_A = fake_A.data
 
-    def translateA(self, input_A):
+    def translateA(self):
         self.netG_A.eval()
-        real_A = Variable(input_A, volatile=True)
+        real_A = Variable(self.input_A, volatile=True)
         if torch.cuda.is_available():
             real_A = real_A.cuda()
         fake_B = self.netG_A(real_A)
         im_fake_B = util.tensor2im(fake_B.data[:, [2, 1, 0], ...])
         return im_fake_B
 
-    def translateB(self, input_B):
+    def translateB(self):
         self.netG_B.eval()
-        real_B = Variable(input_B, volatile=True)
+        real_B = Variable(self.input_B, volatile=True)
         if torch.cuda.is_available():
             real_B = real_B.cuda()
         fake_A = self.netG_B(real_B)
