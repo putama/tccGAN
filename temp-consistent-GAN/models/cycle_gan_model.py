@@ -290,9 +290,14 @@ class CycleGANModel(BaseModel):
         im_fake_A = util.tensor2im(fake_A.data)
         return im_fake_A
 
+    def train(self):
+        self.netG_A.train()
+        self.netG_B.train()
+        
     def get_current_errors(self):
         ret_errors = OrderedDict([('D_A', self.loss_D_A), ('G_A', self.loss_G_A), ('Cyc_A', self.loss_cycle_A),
-                                 ('D_B', self.loss_D_B), ('G_B', self.loss_G_B), ('Cyc_B',  self.loss_cycle_B)])
+                                 ('D_B', self.loss_D_B), ('G_B', self.loss_G_B), ('Cyc_B',  self.loss_cycle_B),
+                                  ('T_A', self.loss_temporal_A), ('T_B', self.loss_temporal_B)])
         if self.opt.identity > 0.0:
             ret_errors['idt_A'] = self.loss_idt_A
             ret_errors['idt_B'] = self.loss_idt_B
