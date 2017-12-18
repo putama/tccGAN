@@ -194,12 +194,7 @@ class CycleGANModel(BaseModel):
                     loss_temporal_A = pair_loss_A
                 else:
                     loss_temporal_A = loss_temporal_A + pair_loss_A
-            loss_temporal_A = (loss_temporal_A / self.opt.batchSize) * (lambda_A * 0.25)
-            # flows_A = compute_opt_flow(self.real_A, self.flownet)
-            # prevframes_A = fake_A[0:-1]
-            # nextframes_A = fake_A[1:]
-            # warped_A = grid_sample(prevframes_A, flows_A)
-            # loss_temporal_A = self.criterionTemporal(nextframes_A, warped_A.detach()) * lambda_A
+            loss_temporal_A = (loss_temporal_A / self.opt.batchSize)
 
             # Domain B temporal loss -- handle minibatch
             loss_temporal_B = None
@@ -213,15 +208,7 @@ class CycleGANModel(BaseModel):
                     loss_temporal_B = pair_loss_B
                 else:
                     loss_temporal_B = loss_temporal_B + pair_loss_B
-            loss_temporal_B = (loss_temporal_B / self.opt.batchSize) * (lambda_B * 0.25)
-            # flows_B = compute_opt_flow(self.real_B, self.flownet)
-            # prevframes_B = fake_B[0:-1]
-            # nextframes_B = fake_B[1:]
-            # warped_B = grid_sample(prevframes_B, flows_B)
-            # loss_temporal_B = self.criterionTemporal(nextframes_B, warped_B.detach()) * lambda_B
-        else:
-            # print "(x) without optical flow"
-            pass
+            loss_temporal_B = (loss_temporal_B / self.opt.batchSize)
 
         # combined loss
         loss_G = loss_G_A + loss_G_B + loss_cycle_A + loss_cycle_B + loss_idt_A + loss_idt_B
