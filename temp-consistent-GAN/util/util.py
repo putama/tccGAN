@@ -99,12 +99,12 @@ def create_log_path(opt):
     log_dir = os.path.join('runs', info)
     return log_dir
 
-def video_writer(direction, epoch, log_dir):
+def video_writer(direction, epoch, log_dir, filename = "video"):
     log_dir = os.path.join(log_dir, direction, str(epoch))
     mkdir(log_dir)
     frame_width = 256
     frame_height = 256
-    filepath = os.path.join(log_dir, "video.avi")
+    filepath = os.path.join(log_dir, str(filename)+".avi")
     out = cv2.VideoWriter(filepath, cv2.VideoWriter_fourcc('M','J','P','G'), 20, (frame_width,frame_height))
 
     return out

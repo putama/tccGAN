@@ -264,21 +264,20 @@ class CycleGANModel(BaseModel):
 
     def translateA(self):
         self.netG_A.eval()
-        real_A = Variable(self.input_A, volatile=True)
-        if torch.cuda.is_available():
-            real_A = real_A.cuda()
-        fake_B = self.netG_A(real_A)
+        fake_B = self.netG_A(self.real_A)
         im_fake_B = util.tensor2im(fake_B.data[:, [2, 1, 0], ...])
         return im_fake_B
 
     def translateB(self):
         self.netG_B.eval()
-        real_B = Variable(self.input_B, volatile=True)
-        if torch.cuda.is_available():
-            real_B = real_B.cuda()
-        fake_A = self.netG_B(real_B)
+        fake_A = self.netG_B(self.real_B)
         im_fake_A = util.tensor2im(fake_A.data[:, [2, 1, 0], ...])
         return im_fake_A
+
+    def get_realAB(self):
+        real_A = util.tensor2im(self.real_A.data[:, [2, 1, 0], ...])
+        real_B = util.tensor2im(self.real_B.data[:, [2, 1, 0], ...])
+        return real_A, real_B
 
     def train(self):
         self.netG_A.train()

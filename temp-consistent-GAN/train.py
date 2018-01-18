@@ -82,6 +82,7 @@ for epoch in range(opt.epoch_count, opt.niter + opt.niter_decay + 1):
         video_writer_B = video_writer("B", epoch, log_dir)
         for i, data in enumerate(test_dataset):
             model.set_input(data)
+            model.forward()
             if hdict_A.has_key(data['A_paths'][0]) and hdict_B.has_key(data['B_paths'][0]):
                 break
             video_writer_A.write(model.translateA())

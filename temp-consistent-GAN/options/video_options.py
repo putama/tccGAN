@@ -5,8 +5,10 @@ def create_video_opt(opt):
     opt.nThreads = 1
     opt.batchSize = 1
     opt.serial_batches = True
+    opt.no_dropout = True
     opt.no_flip = True
     opt.phase = "test"
     opt.dataset_mode = 'unaligned'
+    opt.resize_or_crop = "scale_width" # no random crop
 
     return opt
